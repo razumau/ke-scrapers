@@ -1,12 +1,11 @@
-from dataclasses import dataclass
-from itertools import chain
-from pprint import pprint
-from typing import List, Optional, Iterable, Dict, NamedTuple
-from subprocess import call
 import csv
+from pprint import pprint
+from subprocess import call
+from typing import List, Optional, Iterable, Dict, NamedTuple
 
 import requests
 
+from utils import Team, Player, TeamQuestions, flatten
 
 tournament_ids = {
     2143: 2005,
@@ -25,30 +24,6 @@ tournament_ids = {
 }
 
 
-@dataclass(frozen=True)
-class Team:
-    id: int
-    name: str
-    city: str
-    year: int
-
-
-@dataclass(frozen=True)
-class Player:
-    id: int
-    team: Team
-    first_name: str
-    middle_name: str
-    last_name: str
-
-
-@dataclass(frozen=True)
-class TeamQuestions:
-    team_id: int
-    year: int
-    questions: List[int]
-
-
 class RatingData(NamedTuple):
     teams: Iterable[Team]
     players: Iterable[Player]
@@ -57,10 +32,6 @@ class RatingData(NamedTuple):
 
 def reverse_dict(dict_: Dict):
     return {value: key for key, value in dict_}
-
-
-def flatten(list_of_lists) -> List:
-    return list(chain.from_iterable(list_of_lists))
 
 
 def write_urls_to_file(tournaments, filename):
