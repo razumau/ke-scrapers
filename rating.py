@@ -1,6 +1,11 @@
 from dataclasses import dataclass
 from itertools import chain
-from typing import List, Optional
+from pprint import pprint
+from typing import List, Optional, Iterable, Dict, NamedTuple
+from subprocess import call
+import csv
+
+import requests
 
 
 tournament_ids = {
@@ -21,21 +26,41 @@ tournament_ids = {
 
 
 @dataclass(frozen=True)
+class Team:
+    id: int
+    name: str
+    city: str
+    year: int
+
+
+@dataclass(frozen=True)
 class Player:
     id: int
+    team: Team
     first_name: str
     middle_name: str
     last_name: str
 
 
 @dataclass(frozen=True)
-class Team:
-    id: int
-    name: str
-    city: str
-    players: List[Player]
+class TeamQuestions:
+    team_id: int
     year: int
-    results: Optional[List[int]]
+    questions: List[int]
+
+
+class RatingData(NamedTuple):
+    teams: Iterable[Team]
+    players: Iterable[Player]
+    results: Iterable[TeamQuestions]
+
+
+def reverse_dict(dict_: Dict):
+    return {value: key for key, value in dict_}
+
+
+def flatten(list_of_lists) -> List:
+    return list(chain.from_iterable(list_of_lists))
 
 
 def write_urls_to_file(tournaments, filename):
@@ -49,15 +74,84 @@ def write_urls_to_file(tournaments, filename):
 
 
 def download_csvs(filename):
-    pass
+    print("Downloading CSV files with players")
+    call(["wget", "-q", "--show-progress", "--content-disposition", "-i", filename])
 
 
-def process_csv(tournament_id) -> List[Team]:
-    pass
+def reencode_csvs(ids: Iterable[int]):
+    print("Encoding CSV files to UTF-8")
+    for id_ in ids:
+        input_name = f"tournament-with-players-{id_}.csv"
+        output = open(f"{tournament_ids[id_]}.csv", "wb")
+        call(["iconv", "-f", "windows-1251", "-t", "utf-8", input_name], stdout=output)
+        call(["rm", input_name])
 
 
-def read_rating_data():
-    write_urls_to_file(tournament_ids.keys(), "csv_urls.txt")
-    download_csvs("csv_urls.txt")
-    lists = [process_csv(t_id) for t_id in tournament_ids.keys()]
-    return list(chain.from_iterable(lists))
+def read_csv(year: int) -> List[Dict]:
+    with open(f"{year}.csv") as csvfile:
+        reader = csv.DictReader(csvfile, delimiter=";")
+        return list(dict(row) for row in reader)
+
+
+def process_csv(year: int) -> List[Player]:
+    print(f"Processing {year}")
+    dicts = read_csv(year)
+
+    return [
+        Player(
+            id=int(d["IDplayer"]),
+            team=Team(
+                id=int(d["IDteam"]), name=d["Название"], city=d["Город"], year=year
+            ),
+            first_name=d["Имя"],
+            middle_name=d["Отчество"],
+            last_name=d["Фамилия"],
+        )
+        for d in dicts
+    ]
+
+
+def read_rating_data() -> RatingData:
+    # ids = tournament_ids.keys()
+    # write_urls_to_file(ids, "urls.txt")
+    # download_csvs("urls.txt")
+    # reencode_csvs(ids)
+    players = flatten(process_csv(year) for year in tournament_ids.values())
+    teams = set(player.team for player in players)
+    results = get_results()
+    return RatingData(teams, players, results)
+
+
+def process_team_result(team_result: Dict) -> Optional[List]:
+    questions = [int(i) for i in team_result["mask"]]
+    mask_sum = sum(questions)
+    if mask_sum == 0 or mask_sum != int(team_result["questions_total"]):
+        return None
+    return questions
+
+
+def fetch_results(tournament_id: int) -> List[TeamQuestions]:
+    print(f"Fetching results for {tournament_id}")
+    res = requests.get(
+        f"http://rating.chgk.info/api/tournaments/{tournament_id}/list.json"
+    )
+
+    return [
+        TeamQuestions(
+            team_id=int(team_result["idteam"]),
+            year=tournament_ids[tournament_id],
+            questions=process_team_result(team_result),
+        )
+        for team_result in res.json()
+    ]
+
+
+def get_results() -> List[TeamQuestions]:
+    print("Getting results from rating.chgk.info")
+    results = (fetch_results(id_) for id_ in tournament_ids)
+    return flatten(results)
+
+
+if __name__ == "__main__":
+    data = read_rating_data()
+    pprint(data)
