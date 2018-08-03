@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from itertools import chain
 from typing import List
 
+OLD_URL = "http://localhost:8000/ke"
+
 
 @dataclass(frozen=True)
 class Team:

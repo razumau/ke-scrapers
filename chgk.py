@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from requests_html import HTMLSession
 
-from utils import flatten
+from utils import flatten, OLD_URL
 
 
 @dataclass(frozen=True)
@@ -26,7 +26,7 @@ def safe_int(value: Any) -> int:
 def load_year_results(year: int) -> List[TeamNameQuestions]:
     print(f"Loading results for {year}")
     session = HTMLSession()
-    r = session.get(f"http://windflower.spb.ru/ke/{year}/results/chgk.html")
+    r = session.get(f"{OLD_URL}/{year}/results/chgk.html")
     r.html.encoding = r.encoding
     results_table = r.html.find("table")[2]
 
