@@ -2,8 +2,6 @@ from sqlalchemy import Column, Integer, String, Date, ForeignKey, Float
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import relationship
 
-from db import engine
-
 
 class Base:
     @declared_attr
@@ -25,6 +23,7 @@ class Tournament(Base):
 
 class Team(Base):
     base_name = Column(String, nullable=False)
+    base_rating_id = Column(Integer)
     city = Column(String)
     country = Column(String)
 
@@ -57,8 +56,7 @@ class TeamTournamentPlayer(Base):
 class CHGKTeamResults(Base):
     __tablename__ = "chgk_results"
 
-    tournament_id = Column(Integer, ForeignKey("tournament.id"))
-    team_id = Column(Integer, ForeignKey("team.id"))
+    team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"))
     sum = Column(Integer)
     shootout = Column(Integer)
     tour_1 = Column(Integer)
@@ -67,18 +65,17 @@ class CHGKTeamResults(Base):
     tour_4 = Column(Integer)
     tour_5 = Column(Integer)
 
-    tournament = relationship("Tournament", backref="chgk_results")
+    tournament = relationship("TeamTournament", backref="chgk_results")
 
 
 class CHGKTeamDetails(Base):
     __tablename__ = "chgk_details"
 
-    tournament_id = Column(Integer, ForeignKey("tournament.id"))
-    team_id = Column(Integer, ForeignKey("team.id"))
+    team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"))
     question_number = Column(Integer)
     result = Column(Integer)
 
-    tournament = relationship("Tournament", backref="chgk_details")
+    tournament = relationship("TeamTournament", backref="chgk_details")
 
 
 class Stage(Base):
@@ -92,37 +89,37 @@ class Stage(Base):
 class EQGameTeamResult(Base):
     __tablename__ = "eq_game_team_result"
 
-    tournament_id = Column(Integer, ForeignKey("tournament.id"))
-    team_id = Column(Integer, ForeignKey("team.id"))
+    team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"))
     stage_id = Column(Integer, ForeignKey("stage.id"))
     points = Column(Integer)
     shootout = Column(Integer)
 
-    tournament = relationship("Tournament", backref="eq_game_team_results")
+    tournament = relationship("TeamTournament", backref="eq_game_team_results")
     stage = relationship("Stage", backref="eq_game_team_results")
-    team = relationship("Team", backref="eq_game_team_results")
 
 
 class BRGame(Base):
     __tablename__ = "br_game"
 
-    tournament_id = Column(Integer, ForeignKey("tournament.id"))
     stage_id = Column(Integer, ForeignKey("stage.id"))
-    team_one_id = Column(Integer, ForeignKey("team.id"))
-    team_two_id = Column(Integer, ForeignKey("team.id"))
+    team_one_id = Column(Integer, ForeignKey("team_tournament.id"))
+    team_two_id = Column(Integer, ForeignKey("team_tournament.id"))
     team_one_points = Column(Integer)
     team_two_points = Column(Integer)
 
-    tournament = relationship("Tournament", backref="br_games")
+    tournament = relationship(
+        "TeamTournament",
+        foreign_keys=[team_one_id, team_two_id],
+        primaryjoin="or_(BRGame.team_one_id==TeamTournament.team_id,"
+        "BRGame.team_two_id==TeamTournament.team_id)",
+    )
     stage = relationship("Stage", backref="br_games")
-    team = relationship("Team", backref="br_games")
 
 
 class BRGroupTeamResult(Base):
     __tablename__ = "br_group_team_result"
 
-    tournament_id = Column(Integer, ForeignKey("tournament.id"))
-    team_id = Column(Integer, ForeignKey("team.id"))
+    team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"))
     stage_id = Column(Integer, ForeignKey("stage.id"))
     wins = Column(Integer)
     losses = Column(Integer)
@@ -132,9 +129,8 @@ class BRGroupTeamResult(Base):
     points = Column(Integer)
     place = Column(Float)
 
-    tournament = relationship("Tournament", backref="br_group_team_results")
+    tournament = relationship("TeamTournament", backref="br_group_team_results")
     stage = relationship("Stage", backref="br_group_team_results")
-    team = relationship("Team", backref="br_group_team_results")
 
 
 class SIGame(Base):
@@ -149,6 +145,3 @@ class SIGame(Base):
     tournament = relationship("Tournament", backref="si_games")
     stage = relationship("Stage", backref="si_games")
     player = relationship("Player", backref="si_games")
-
-
-Base.metadata.create_all(engine())

@@ -125,4 +125,4 @@ def get_results() -> List[TeamQuestions]:
 
 if __name__ == "__main__":
     data = read_rating_data()
-    pprint(data)
+    pprint(data.teams)
