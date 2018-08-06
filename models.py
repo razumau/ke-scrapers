@@ -8,7 +8,7 @@ class Base:
     def __tablename__(self):
         return self.__name__.lower()
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
 
 
 Base = declarative_base(cls=Base)
@@ -37,8 +37,8 @@ class Player(Base):
 
 class TeamTournament(Base):
     __tablename__ = "team_tournament"
-    tournament_id = Column(Integer, ForeignKey("tournament.id"))
-    team_id = Column(Integer, ForeignKey("team.id"))
+    tournament_id = Column(Integer, ForeignKey("tournament.id"), index=True)
+    team_id = Column(Integer, ForeignKey("team.id"), index=True)
     rating_id = Column(Integer)
 
     tournament = relationship("Tournament", backref="teams")
@@ -47,8 +47,8 @@ class TeamTournament(Base):
 
 class TeamTournamentPlayer(Base):
     __tablename__ = "team_tournament_player"
-    player_id = Column(Integer, ForeignKey("player.id"))
-    team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"))
+    player_id = Column(Integer, ForeignKey("player.id"), index=True)
+    team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"), index=True)
 
     team_tournament = relationship("TeamTournament", backref="players")
 
@@ -56,7 +56,7 @@ class TeamTournamentPlayer(Base):
 class CHGKTeamResults(Base):
     __tablename__ = "chgk_results"
 
-    team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"))
+    team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"), index=True)
     sum = Column(Integer)
     shootout = Column(Integer)
     tour_1 = Column(Integer)
@@ -71,7 +71,7 @@ class CHGKTeamResults(Base):
 class CHGKTeamDetails(Base):
     __tablename__ = "chgk_details"
 
-    team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"))
+    team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"), index=True)
     question_number = Column(Integer)
     result = Column(Integer)
 
@@ -79,7 +79,7 @@ class CHGKTeamDetails(Base):
 
 
 class Stage(Base):
-    tournament_id = Column(Integer, ForeignKey("tournament.id"))
+    tournament_id = Column(Integer, ForeignKey("tournament.id"), index=True)
     game = Column(String)
     name = Column(String)
 
@@ -89,8 +89,8 @@ class Stage(Base):
 class EQGameTeamResult(Base):
     __tablename__ = "eq_game_team_result"
 
-    team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"))
-    stage_id = Column(Integer, ForeignKey("stage.id"))
+    team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"), index=True)
+    stage_id = Column(Integer, ForeignKey("stage.id"), index=True)
     points = Column(Integer)
     shootout = Column(Integer)
 
@@ -101,9 +101,9 @@ class EQGameTeamResult(Base):
 class BRGame(Base):
     __tablename__ = "br_game"
 
-    stage_id = Column(Integer, ForeignKey("stage.id"))
-    team_one_id = Column(Integer, ForeignKey("team_tournament.id"))
-    team_two_id = Column(Integer, ForeignKey("team_tournament.id"))
+    stage_id = Column(Integer, ForeignKey("stage.id"), index=True)
+    team_one_id = Column(Integer, ForeignKey("team_tournament.id"), index=True)
+    team_two_id = Column(Integer, ForeignKey("team_tournament.id"), index=True)
     team_one_points = Column(Integer)
     team_two_points = Column(Integer)
 
@@ -119,8 +119,8 @@ class BRGame(Base):
 class BRGroupTeamResult(Base):
     __tablename__ = "br_group_team_result"
 
-    team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"))
-    stage_id = Column(Integer, ForeignKey("stage.id"))
+    team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"), index=True)
+    stage_id = Column(Integer, ForeignKey("stage.id"), index=True)
     wins = Column(Integer)
     losses = Column(Integer)
     draws = Column(Integer)
@@ -136,9 +136,9 @@ class BRGroupTeamResult(Base):
 class SIGame(Base):
     __tablename__ = "si_game"
 
-    tournament_id = Column(Integer, ForeignKey("tournament.id"))
-    player_id = Column(Integer, ForeignKey("player.id"))
-    stage_id = Column(Integer, ForeignKey("stage.id"))
+    tournament_id = Column(Integer, ForeignKey("tournament.id"), index=True)
+    player_id = Column(Integer, ForeignKey("player.id"), index=True)
+    stage_id = Column(Integer, ForeignKey("stage.id"), index=True)
     points = Column(Integer)
     shootout = Column(Integer)
 

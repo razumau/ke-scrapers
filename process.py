@@ -1,9 +1,9 @@
 from collections import Counter
 from itertools import groupby
-from typing import List, Tuple, Iterable
+from typing import List, Tuple, Iterable, Set
 
 from renames import country_for_team, rename_team, rename_city
-from utils import Team
+from utils import Team, Player
 
 
 def build_base_teams(teams: Iterable[Team]) -> List[Tuple]:
@@ -25,3 +25,7 @@ def build_base_teams(teams: Iterable[Team]) -> List[Tuple]:
         )
         for g in groups
     ]
+
+
+def unique_players(players: Iterable[Player]) -> Set[Tuple]:
+    return {(p.first_name, p.middle_name, p.last_name, p.id) for p in players}
