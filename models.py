@@ -40,6 +40,7 @@ class TeamTournament(Base):
     tournament_id = Column(Integer, ForeignKey("tournament.id"), index=True)
     team_id = Column(Integer, ForeignKey("team.id"), index=True)
     rating_id = Column(Integer)
+    name = Column(String)
 
     tournament = relationship("Tournament", backref="teams")
     team = relationship("Team", backref="tournaments")
@@ -51,6 +52,7 @@ class TeamTournamentPlayer(Base):
     team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"), index=True)
 
     team_tournament = relationship("TeamTournament", backref="players")
+    player = relationship("Player", backref="tournaments")
 
 
 class CHGKTeamResults(Base):
@@ -86,16 +88,48 @@ class Stage(Base):
     tournament = relationship("Tournament", backref="stages")
 
 
+class EQGame(Base):
+    __tablename__ = "eq_game"
+    tournament_id = Column(Integer, ForeignKey("tournament.id"), index=True)
+    stage_id = Column(Integer, ForeignKey("stage.id"), index=True)
+    name = Column(String)
+
+    tournament = relationship("Tournament", backref="eq_games")
+    stage = relationship("Stage", backref="eq_games")
+
+
 class EQGameTeamResult(Base):
     __tablename__ = "eq_game_team_result"
 
     team_tournament_id = Column(Integer, ForeignKey("team_tournament.id"), index=True)
-    stage_id = Column(Integer, ForeignKey("stage.id"), index=True)
+    game_id = Column(Integer, ForeignKey("eq_game.id"), index=True)
     points = Column(Integer)
     shootout = Column(Integer)
 
     tournament = relationship("TeamTournament", backref="eq_game_team_results")
-    stage = relationship("Stage", backref="eq_game_team_results")
+    game = relationship("EQGame", backref="team_results")
+
+
+class SIGame(Base):
+    __tablename__ = "si_game"
+    tournament_id = Column(Integer, ForeignKey("tournament.id"), index=True)
+    stage_id = Column(Integer, ForeignKey("stage.id"), index=True)
+    name = Column(String)
+
+    tournament = relationship("Tournament", backref="si_games")
+    stage = relationship("Stage", backref="si_games")
+
+
+class SIGamePlayerResult(Base):
+    __tablename__ = "si_game_player_result"
+
+    player_id = Column(Integer, ForeignKey("player.id"), index=True)
+    game_id = Column(Integer, ForeignKey("si_game.id"), index=True)
+    points = Column(Integer)
+    shootout = Column(Integer)
+
+    game = relationship("SIGame", backref="players")
+    player = relationship("Player", backref="si_games")
 
 
 class BRGame(Base):
@@ -131,17 +165,3 @@ class BRGroupTeamResult(Base):
 
     tournament = relationship("TeamTournament", backref="br_group_team_results")
     stage = relationship("Stage", backref="br_group_team_results")
-
-
-class SIGame(Base):
-    __tablename__ = "si_game"
-
-    tournament_id = Column(Integer, ForeignKey("tournament.id"), index=True)
-    player_id = Column(Integer, ForeignKey("player.id"), index=True)
-    stage_id = Column(Integer, ForeignKey("stage.id"), index=True)
-    points = Column(Integer)
-    shootout = Column(Integer)
-
-    tournament = relationship("Tournament", backref="si_games")
-    stage = relationship("Stage", backref="si_games")
-    player = relationship("Player", backref="si_games")
