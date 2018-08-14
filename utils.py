@@ -31,3 +31,20 @@ class TeamQuestions:
 
 def flatten(list_of_lists) -> List:
     return list(chain.from_iterable(list_of_lists))
+
+
+@dataclass(frozen=True)
+class SIPlayer:
+    team: str
+    city: str
+    first_name: str
+    last_name: str
+    points: int
+    shootout: int
+
+
+@dataclass(frozen=True)
+class SIGame:
+    stage_name: str
+    game_name: str
+    players: List[SIPlayer]
