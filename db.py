@@ -15,9 +15,13 @@ from models import (
     TeamTournamentPlayer,
     CHGKTeamDetails,
     CHGKTeamResults,
+    Stage,
     SIGame,
     SIGamePlayerResult,
 )
+from si import old_si_stages, new_si_stages
+from br import old_br_stages, new_br_stages
+from eq import old_eq_stages, new_eq_stages
 
 
 def engine() -> Engine:
@@ -41,6 +45,31 @@ def create_tournaments():
     with session() as s:
         query = open("tournaments.sql").read()
         s.execute(query)
+
+
+def generate_stages(years: Iterable[int], stages: Iterable, game: str):
+    years_map = fetch_tournament_year_map()
+
+    return [(years_map[year], game, stage) for stage in stages for year in years]
+
+
+def create_stages():
+    def create_stage(stage):
+        return Stage(tournament_id=stage[0], game=stage[1], name=stage[2])
+
+    old_range = list(range(2005, 2017))
+    new_range = list(range(2017, 2018))
+
+    stages = [
+        *generate_stages(old_range, old_si_stages, "СИ"),
+        *generate_stages(new_range, new_si_stages, "СИ"),
+        *generate_stages(old_range, new_eq_stages, "ЭК"),
+        *generate_stages(new_range, new_eq_stages, "ЭК"),
+        *generate_stages(old_range, new_br_stages, "БР"),
+        *generate_stages(new_range, new_br_stages, "БР"),
+    ]
+
+    save(Stage, create_stage, stages)
 
 
 def save_teams(teams: List[Tuple]):

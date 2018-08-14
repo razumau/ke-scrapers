@@ -1,6 +1,4 @@
-from pprint import pprint
-
-from itertools import tee, groupby, chain
+from itertools import tee, groupby
 from typing import Iterable, List
 
 from utils import SIPlayer, SIGame, flatten
@@ -8,6 +6,16 @@ from utils import SIPlayer, SIGame, flatten
 from requests_html import HTMLSession
 
 OLD_URL = "http://localhost:8000/ke"
+
+old_si_stages = [
+    "Квалификационный этап",
+    "1/27 финала",
+    "1/9 финала",
+    "1/3 финала",
+    "Финал",
+]
+
+new_si_stages = ["1/16 финала", "1/8 финала", "1/4 финала", "1/2 финала", "Финал"]
 
 
 def load_si_results(year: int):
@@ -34,15 +42,9 @@ def pairwise(iterable: Iterable):
 
 
 def split_into_stages(rows):
-    stages = [
-        "Квалификационный этап",
-        "1/27 финала",
-        "1/9 финала",
-        "1/3 финала",
-        "Финал",
+    indices = [
+        i for stage in old_si_stages for i, row in enumerate(rows) if row[0] == stage
     ]
-
-    indices = [i for stage in stages for i, row in enumerate(rows) if row[0] == stage]
 
     return {rows[i][0]: rows[i + 1 : j] for i, j in pairwise(indices)}
 
