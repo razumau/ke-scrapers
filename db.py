@@ -63,9 +63,9 @@ def create_stages():
     stages = [
         *generate_stages(old_range, old_si_stages, "СИ"),
         *generate_stages(new_range, new_si_stages, "СИ"),
-        *generate_stages(old_range, new_eq_stages, "ЭК"),
+        *generate_stages(old_range, old_eq_stages, "ЭК"),
         *generate_stages(new_range, new_eq_stages, "ЭК"),
-        *generate_stages(old_range, new_br_stages, "БР"),
+        *generate_stages(old_range, old_br_stages, "БР"),
         *generate_stages(new_range, new_br_stages, "БР"),
     ]
 
@@ -108,7 +108,9 @@ def find_team_id(rating_id: int) -> int:
     return team_id
 
 
-def find_player_id(first_name: str, last_name: str, team_name: str = None):
+def find_player_id(
+    first_name: str, last_name: str, team_name: str = None, team_city: str = None
+):
     with session() as s:
         ids = (
             s.query(Player.id)
@@ -122,15 +124,81 @@ def find_player_id(first_name: str, last_name: str, team_name: str = None):
         if team_name is None:
             raise ValueError(f"More than one player with name {first_name} {last_name}")
 
-        players = s.query(TeamTournament).filter_by(name=team_name).one().players
-        team_player = [
-            id_[0] for id_ in ids if id_[0] in [p.player_id for p in players]
-        ]
+        try:
+            player_id = (
+                s.query(TeamTournamentPlayer.player_id)
+                .join(TeamTournament)
+                .join(Player)
+                .filter(
+                    TeamTournament.name == team_name,
+                    Player.first_name == first_name,
+                    Player.last_name == last_name
+                )
+                .one()
+            )
+        except Exception:
+            print(first_name, last_name, team_name)
+            raise
+        return player_id
 
-        if len(team_player) == 1:
-            return team_player[0]
 
-        raise ValueError(f"Player {first_name} {last_name} not found in {team_name}")
+def save_si_results(si_results: Dict[int, List[utils.SIGame]]):
+    print("Saving SI results")
+    year_map = fetch_tournament_year_map()
+    with session() as s:
+        # s.execute("TRUNCATE si_game CASCADE")
+        s.execute("TRUNCATE si_game_player_result CASCADE")
+
+    # for year, games in si_results.items():
+    #     print(f"Saving SI games for {year}")
+    #     t_id = year_map[year]
+    #     save_single_year_si_games(t_id, games)
+
+    for year, games in si_results.items():
+        print(f"Saving SI results for {year}")
+        t_id = year_map[year]
+        save_single_year_si_results(t_id, games)
+
+
+def save_single_year_si_games(t_id: int, games: List[utils.SIGame]):
+    def create_si_game(game: utils.SIGame):
+        with session() as s:
+            stage_id = (
+                s.query(Stage.id)
+                .filter_by(tournament_id=t_id, name=game.stage_name, game="СИ")
+                .one()[0]
+            )
+        return SIGame(tournament_id=t_id, stage_id=stage_id, name=game.game_name)
+
+    save(SIGame, create_si_game, games, truncate=False)
+
+
+def save_single_year_si_results(t_id: int, games: List[utils.SIGame]):
+    with session() as s:
+        for game in games:
+            saved_game = (
+                s.query(SIGame)
+                .join(Stage)
+                .filter(
+                    Stage.tournament_id == t_id,
+                    Stage.name == game.stage_name,
+                    Stage.game == "СИ",
+                    SIGame.name == game.game_name,
+                )
+                .one()
+            )
+
+            for player in game.players:
+                player_id = find_player_id(
+                    player.first_name, player.last_name, player.team
+                )
+                saved_game.players.append(
+                    SIGamePlayerResult(
+                        player_id=player_id,
+                        points=player.points,
+                        shootout=player.shootout,
+                    )
+                )
 
 
 def save_team_tournaments(teams: Iterable[utils.Team]):
@@ -195,13 +263,11 @@ def save_chgk_results(results: Iterable[utils.TeamQuestions]):
             tt.chgk_results.append(aggregated_results)
 
 
-def save(entity_type, entity_factory: Callable, entities_data: Iterable):
+def save(entity_type, entity_factory: Callable, entities_data: Iterable,
+         truncate: bool = True):
     with session() as s:
-        s.query(entity_type).delete()
+        if truncate:
+            s.query(entity_type).delete()
 
         for entity in entities_data:
             s.add(entity_factory(entity))
-
-
-def save_si_results(si_results: List[utils.SIGame]):
-    print("Saving SI results")

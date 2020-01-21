@@ -23,7 +23,7 @@ def load_si_results(year: int):
     split = split_into_stages(all_rows)
     games = [split_into_games(stage, rows) for stage, rows in split.items()]
     final = split_into_games("Финал", all_rows[-4:])
-    return flatten(games).extend(final)
+    return [*flatten(games), *final]
 
 
 def fetch_page(year: int) -> List[str]:
@@ -51,16 +51,26 @@ def split_into_stages(rows):
 
 def split_into_games(stage_name: str, rows: List):
     result = []
-    name = rows[0][0]  # if stage_name != 'Финал' else 'Финал'
+    name = rows[0][0]
+    if not name or not name.startswith("Бой"):
+        number = 1
+        local_name = f"{stage_name} — бой {number}"
+        name = None
+
     for row in rows[1:]:
-        if row[0].startswith("Бой"):
+        if row[0].startswith("Бой "):
             name = row[0]
+            continue
+
+        if not row[0] and not name:
+            number += 1
+            local_name = f"{stage_name} — бой {number}"
             continue
 
         if not row[0]:
             continue
 
-        result.append((stage_name, name, process_score_row(row)))
+        result.append((stage_name, name or local_name, process_score_row(row)))
 
     data = sorted(result, key=lambda r: r[1])
     groups = [list(g) for _, g in groupby(data, lambda r: r[1])]
@@ -74,14 +84,15 @@ def split_into_games(stage_name: str, rows: List):
 
 
 def process_score_row(row) -> SIPlayer:
-    player, team, score = row[0], row[1], row[2]
+    player, team = row[0], row[1]
+    points = None if not row[2:] else row[2]
     split = team.split("(")
     return SIPlayer(
         team=split[0][:-1],
         city=None if not split[1:] else split[1][:-1],
         first_name=player.split(" ")[1],
         last_name=player.split(" ")[0],
-        points=score,
+        points=points,
         shootout=None if not row[3:] else sum(int(r) for r in row[3:]),
     )
 
