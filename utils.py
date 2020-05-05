@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from itertools import chain
-from typing import List
+from typing import List, Optional, Iterable
 
 OLD_URL = "http://localhost:8000/ke"
 
@@ -29,7 +29,7 @@ class TeamQuestions:
     questions: List[int]
 
 
-def flatten(list_of_lists) -> List:
+def flatten(list_of_lists: Iterable) -> List:
     return list(chain.from_iterable(list_of_lists))
 
 
@@ -48,3 +48,28 @@ class SIGame:
     stage_name: str
     game_name: str
     players: List[SIPlayer]
+
+
+@dataclass(frozen=True)
+class BRGame:
+    stage_name: str
+    team_one: str
+    team_two: str
+    team_one_points: int
+    team_two_points: int
+    team_one_shootout_points: Optional[int] = None
+    team_two_shootout_points: Optional[int] = None
+
+
+@dataclass(frozen=False)
+class BRGroupTeamResult:
+    stage_name: str
+    group_name: str
+    team_name: str
+    wins: int
+    losses: int
+    draws: int
+    plus: int
+    minus: int
+    points: int
+    place: float
