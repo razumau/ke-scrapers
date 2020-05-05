@@ -140,6 +140,8 @@ class BRGame(Base):
     team_two_id = Column(Integer, ForeignKey("team_tournament.id"), index=True)
     team_one_points = Column(Integer)
     team_two_points = Column(Integer)
+    team_one_shootout = Column(Integer)
+    team_two_shootout = Column(Integer)
 
     tournament = relationship(
         "TeamTournament",
@@ -162,6 +164,7 @@ class BRGroupTeamResult(Base):
     minus = Column(Integer)
     points = Column(Integer)
     place = Column(Float)
+    group = Column(String)
 
     tournament = relationship("TeamTournament", backref="br_group_team_results")
     stage = relationship("Stage", backref="br_group_team_results")
