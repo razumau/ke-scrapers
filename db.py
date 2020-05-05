@@ -20,7 +20,7 @@ from models import (
     SIGamePlayerResult,
 )
 from si import old_si_stages, new_si_stages
-from br import old_br_stages, new_br_stages
+from old_br import old_br_stages, new_br_stages
 from eq import old_eq_stages, new_eq_stages
 
 

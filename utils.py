@@ -66,10 +66,10 @@ class BRGroupTeamResult:
     stage_name: str
     group_name: str
     team_name: str
-    wins: int
-    losses: int
-    draws: int
-    plus: int
-    minus: int
-    points: int
-    place: float
+    wins: int = 0
+    losses: int = 0
+    draws: int = 0
+    plus: int = 0
+    minus: int = 0
+    points: int = 0
+    place: float = 0

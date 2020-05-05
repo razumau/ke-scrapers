@@ -20,15 +20,6 @@ old_br_stages = [
     "Финал",
 ]
 
-new_br_stages = [
-    "Предварительный этап",
-    "Топ-16",
-    "Топ-8",
-    "Полуфинал",
-    "Бой за третье место",
-    "Финал",
-]
-
 old_years = list(range(2006, 2017))
 game_format = re.compile(r"[\d]+:[\d]+")
 
@@ -81,8 +72,6 @@ def read_single_game(line: str, stage: str) -> BRGame:
 
 def read_final(line) -> List[BRGame]:
     first, second, game = line.split(" - ")
-    # team_one = first.split("(")[0].strip()
-    # team_two = second.split("(")[0].strip()
     delimiter = ";" if ";" in game else ","
     subgames = game.split(delimiter)
     return [
@@ -139,6 +128,8 @@ def read_group(lines: List, stage: str) -> Tuple[List[BRGame], List[BRGroupTeamR
 
 
 def is_junk_line(line: str):
+    if line.strip() == "":
+        return True
     if line == "\n":
         return True
     if "Кубок Европы" in line:
