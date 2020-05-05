@@ -25,7 +25,7 @@ from eq import old_eq_stages, new_eq_stages
 
 
 def engine() -> Engine:
-    return create_engine("postgresql://localhost:5433/ke", echo=False)
+    return create_engine("sqlite+pysqlite:///db.db")
 
 
 @contextmanager
@@ -58,7 +58,7 @@ def create_stages():
         return Stage(tournament_id=stage[0], game=stage[1], name=stage[2])
 
     old_range = list(range(2005, 2017))
-    new_range = list(range(2017, 2018))
+    new_range = list(range(2017, 2020))
 
     stages = [
         *generate_stages(old_range, old_si_stages, "СИ"),
