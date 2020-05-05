@@ -1,6 +1,7 @@
 import csv
 from pprint import pprint
 from subprocess import call
+import os
 from typing import List, Optional, Iterable, Dict, NamedTuple
 
 import requests
@@ -21,6 +22,8 @@ tournament_ids = {
     3563: 2015,
     3999: 2016,
     4411: 2017,
+    5015: 2018,
+    5773: 2019,
 }
 
 
@@ -49,30 +52,26 @@ def download_csvs(filename):
     call(["wget", "-q", "--show-progress", "--content-disposition", "-i", filename])
 
 
-def reencode_csvs(ids: Iterable[int]):
-    print("Encoding CSV files to UTF-8")
+def rename_csvs(ids: Iterable[int]):
+    print("Renaming CSV files")
     for id_ in ids:
-        input_name = f"tournament-with-players-{id_}.csv"
-        output = open(f"{tournament_ids[id_]}.csv", "wb")
-        call(["iconv", "-f", "windows-1251", "-t", "utf-8", input_name], stdout=output)
-        call(["rm", input_name])
+        os.rename(f"tournament-with-players-{id_}.csv", f"{tournament_ids[id_]}.csv")
 
 
 def read_csv(year: int) -> List[Dict]:
-    with open(f"{year}.csv") as csvfile:
-        reader = csv.DictReader(csvfile, delimiter=";")
+    with open(f"{year}.csv", encoding='utf-8-sig') as csvfile:
+        reader = csv.DictReader(csvfile, delimiter=",")
         return list(dict(row) for row in reader)
 
 
 def process_csv(year: int) -> List[Player]:
     print(f"Processing {year}")
     dicts = read_csv(year)
-
     return [
         Player(
             id=int(d["IDplayer"]),
             team=Team(
-                id=int(d["IDteam"]), name=d["Название"], city=d["Город"], year=year
+                id=int(d["Team ID"]), name=d["Название"], city=d["Город"], year=year
             ),
             first_name=d["Имя"],
             middle_name=d["Отчество"],
@@ -83,10 +82,10 @@ def process_csv(year: int) -> List[Player]:
 
 
 def read_rating_data() -> RatingData:
-    # ids = tournament_ids.keys()
-    # write_urls_to_file(ids, "urls.txt")
-    # download_csvs("urls.txt")
-    # reencode_csvs(ids)
+    ids = tournament_ids.keys()
+    write_urls_to_file(ids, "urls.txt")
+    download_csvs("urls.txt")
+    rename_csvs(ids)
     players = flatten(process_csv(year) for year in tournament_ids.values())
     teams = set(player.team for player in players)
     results = get_results()
