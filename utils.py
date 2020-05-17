@@ -29,6 +29,15 @@ class TeamQuestions:
     questions: List[int]
 
 
+@dataclass(frozen=True)
+class TeamNameQuestions:
+    name: str
+    city: str
+    country: str
+    year: int
+    questions: List[int]
+
+
 def flatten(list_of_lists: Iterable) -> List:
     return list(chain.from_iterable(list_of_lists))
 

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, Float, Boolean
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import relationship
 
@@ -66,6 +66,7 @@ class CHGKTeamResults(Base):
     tour_3 = Column(Integer)
     tour_4 = Column(Integer)
     tour_5 = Column(Integer)
+    unofficial = Column(Boolean)
 
     tournament = relationship("TeamTournament", backref="chgk_results")
 

@@ -18,9 +18,13 @@ from models import (
     Stage,
     SIGame,
     SIGamePlayerResult,
+    BRGame,
+    BRGroupTeamResult,
 )
+from renames import rename_team
 from si import old_si_stages, new_si_stages
-from old_br import old_br_stages, new_br_stages
+from old_br import old_br_stages, br_stages_2005
+from new_br import new_br_stages
 from eq import old_eq_stages, new_eq_stages
 
 
@@ -57,7 +61,7 @@ def create_stages():
     def create_stage(stage):
         return Stage(tournament_id=stage[0], game=stage[1], name=stage[2])
 
-    old_range = list(range(2005, 2017))
+    old_range = list(range(2006, 2017))
     new_range = list(range(2017, 2020))
 
     stages = [
@@ -65,6 +69,7 @@ def create_stages():
         *generate_stages(new_range, new_si_stages, "СИ"),
         *generate_stages(old_range, old_eq_stages, "ЭК"),
         *generate_stages(new_range, new_eq_stages, "ЭК"),
+        *generate_stages([2005], br_stages_2005, "БР"),
         *generate_stages(old_range, old_br_stages, "БР"),
         *generate_stages(new_range, new_br_stages, "БР"),
     ]
@@ -108,6 +113,15 @@ def find_team_id(rating_id: int) -> int:
     return team_id
 
 
+def find_team_tournament_id(session, tournament_id: int, team_name: str) -> int:
+    print(f"finding id for {team_name} in {tournament_id}")
+    return (
+        session.query(TeamTournament.id)
+        .filter_by(tournament_id=tournament_id, name=team_name)
+        .one()[0]
+    )
+
+
 def find_player_id(
     first_name: str, last_name: str, team_name: str = None, team_city: str = None
 ):
@@ -132,7 +146,7 @@ def find_player_id(
                 .filter(
                     TeamTournament.name == team_name,
                     Player.first_name == first_name,
-                    Player.last_name == last_name
+                    Player.last_name == last_name,
                 )
                 .one()
             )
@@ -149,15 +163,83 @@ def save_si_results(si_results: Dict[int, List[utils.SIGame]]):
         # s.execute("TRUNCATE si_game CASCADE")
         s.execute("TRUNCATE si_game_player_result CASCADE")
 
-    # for year, games in si_results.items():
-    #     print(f"Saving SI games for {year}")
-    #     t_id = year_map[year]
-    #     save_single_year_si_games(t_id, games)
-
     for year, games in si_results.items():
         print(f"Saving SI results for {year}")
         t_id = year_map[year]
         save_single_year_si_results(t_id, games)
+
+
+def save_br_results(
+    br_results: Dict[int, Tuple[List[utils.BRGroupTeamResult], List[utils.BRGame]]]
+):
+    print("Saving BR results")
+    year_map = fetch_tournament_year_map()
+    with session() as s:
+        s.execute("delete from br_group_team_result")
+        # s.execute("delete from br_game")
+
+    for year, (group_results, games) in br_results.items():
+        print(f"Saving BR results for {year}")
+        t_id = year_map[year]
+        # save_single_year_br_games(t_id, games)
+        save_single_year_br_group_results(t_id, group_results)
+
+
+def save_single_year_br_games(t_id: int, games: List[utils.BRGame]):
+    def create_br_game(game: utils.BRGame):
+        with session() as s:
+            stage_id = (
+                s.query(Stage.id)
+                .filter_by(tournament_id=t_id, name=game.stage_name, game="БР")
+                .one()[0]
+            )
+
+            team_one_id = find_team_tournament_id(s, t_id, game.team_one)
+            team_two_id = find_team_tournament_id(s, t_id, game.team_two)
+
+            s.add(
+                BRGame(
+                    stage_id=stage_id,
+                    team_one_id=team_one_id,
+                    team_two_id=team_two_id,
+                    team_one_points=game.team_one_points,
+                    team_two_points=game.team_two_points,
+                    team_one_shootout=game.team_one_shootout_points,
+                    team_two_shootout=game.team_two_shootout_points,
+                )
+            )
+
+    for game in games:
+        print(game.stage_name, game.team_one, game.team_two)
+        create_br_game(game)
+
+
+def save_single_year_br_group_results(
+    t_id: int, group_results: List[utils.BRGroupTeamResult]
+):
+    for gr in group_results:
+        with session() as s:
+            stage_id = (
+                s.query(Stage.id)
+                .filter_by(tournament_id=t_id, name=gr.stage_name, game="БР")
+                .one()[0]
+            )
+            team_id = find_team_tournament_id(s, t_id, gr.team_name)
+            print(f"found team_id for {gr.team_name}")
+            s.add(
+                BRGroupTeamResult(
+                    team_tournament_id=team_id,
+                    stage_id=stage_id,
+                    wins=gr.wins,
+                    losses=gr.losses,
+                    draws=gr.draws,
+                    plus=gr.plus,
+                    minus=gr.minus,
+                    points=gr.points,
+                    place=gr.place,
+                    group=gr.group_name,
+                )
+            )
 
 
 def save_single_year_si_games(t_id: int, games: List[utils.SIGame]):
@@ -208,7 +290,7 @@ def save_team_tournaments(teams: Iterable[utils.Team]):
         return TeamTournament(
             tournament_id=tournament_year[team.year],
             team_id=find_team_id(team.id),
-            name=team.name,
+            name=rename_team(team.name),
             rating_id=team.id,
         )
 
@@ -231,40 +313,82 @@ def save_team_tournament_player(players: Iterable[utils.Player]):
             tt.players.append(ttp)
 
 
-def save_chgk_results(results: Iterable[utils.TeamQuestions]):
-    print("Saving chgk results")
+def save_old_chgk_results(results: Iterable[utils.TeamNameQuestions]):
+    print("Saving old chgk results")
     with session() as s:
-        s.query(CHGKTeamDetails).delete()
-        s.query(CHGKTeamResults).delete()
+        # s.query(CHGKTeamDetails).delete()
+        # s.query(CHGKTeamResults).delete()
+        for res in results:
+            t_id = fetch_tournament_year_map()[res.year]
+            tt_id = find_team_tournament_id(s, t_id, res.name)
+
+            for q_number, q_result in enumerate(res.questions, 1):
+                s.add(
+                    CHGKTeamDetails(
+                        team_tournament_id=tt_id,
+                        question_number=q_number,
+                        result=q_result,
+                    )
+                )
+
+            s.add(
+                CHGKTeamResults(
+                    team_tournament_id=tt_id,
+                    sum=sum(res.questions),
+                    tour_1=sum(res.questions[:15]),
+                    tour_2=sum(res.questions[15:30]),
+                    tour_3=sum(res.questions[30:45]),
+                    tour_4=sum(res.questions[45:60]),
+                    tour_5=sum(res.questions[60:75]),
+                    unofficial=False,
+                )
+            )
+
+
+def save_rating_chgk_results(results: Iterable[utils.TeamQuestions]):
+    print("Saving rating chgk results")
+    with session() as s:
+        # s.query(CHGKTeamDetails).delete()
+        # s.query(CHGKTeamResults).delete()
         for res in results:
             if not res.questions:
                 continue
 
             t_id = fetch_tournament_year_map()[res.year]
-            tt = (
-                s.query(TeamTournament)
+            tt_id = (
+                s.query(TeamTournament.id)
                 .filter_by(rating_id=res.team_id, tournament_id=t_id)
-                .one()
+                .one()[0]
             )
-            questions = [
-                CHGKTeamDetails(question_number=q_number, result=q_result)
-                for q_number, q_result in enumerate(res.questions, 1)
-            ]
-            aggregated_results = CHGKTeamResults(
-                sum=sum(res.questions),
-                tour_1=sum(res.questions[:15]),
-                tour_2=sum(res.questions[15:30]),
-                tour_3=sum(res.questions[30:45]),
-                tour_4=sum(res.questions[45:60]),
-                tour_5=sum(res.questions[60:75]),
+            for q_number, q_result in enumerate(res.questions, 1):
+                s.add(
+                    CHGKTeamDetails(
+                        team_tournament_id=tt_id,
+                        question_number=q_number,
+                        result=q_result,
+                    )
+                )
+
+            s.add(
+                CHGKTeamResults(
+                    team_tournament_id=tt_id,
+                    sum=sum(res.questions),
+                    tour_1=sum(res.questions[:15]),
+                    tour_2=sum(res.questions[15:30]),
+                    tour_3=sum(res.questions[30:45]),
+                    tour_4=sum(res.questions[45:60]),
+                    tour_5=sum(res.questions[60:75]),
+                    unofficial=False,
+                )
             )
 
-            tt.chgk_details.extend(questions)
-            tt.chgk_results.append(aggregated_results)
 
-
-def save(entity_type, entity_factory: Callable, entities_data: Iterable,
-         truncate: bool = True):
+def save(
+    entity_type,
+    entity_factory: Callable,
+    entities_data: Iterable,
+    truncate: bool = True,
+):
     with session() as s:
         if truncate:
             s.query(entity_type).delete()

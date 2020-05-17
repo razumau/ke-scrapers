@@ -230,14 +230,11 @@ def read_2005() -> Tuple[List[BRGroupTeamResult], List[BRGame]]:
     return flatten(groups), games
 
 
+def load_old_br_results():
+    newer = {year: read_old_year(year) for year in old_years}
+    return {2005: read_2005(), **newer}
+
+
 if __name__ == '__main__':
-    for year in old_years:
-        try:
-            groups, games = read_old_year(year)
-            for g in groups:
-                assert isinstance(g, BRGroupTeamResult)
-            for g in games:
-                assert isinstance(g, BRGame)
-        except Exception as e:
-            print(f"error in {year}")
-            print(e)
+    results = load_old_br_results()
+    print(results)

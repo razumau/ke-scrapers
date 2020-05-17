@@ -3,10 +3,6 @@ from typing import Iterable, List
 
 from utils import SIPlayer, SIGame, flatten
 
-from requests_html import HTMLSession
-
-OLD_URL = "http://localhost:8000/ke"
-
 old_si_stages = [
     "Квалификационный этап",
     "1/27 финала",

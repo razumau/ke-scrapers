@@ -166,14 +166,5 @@ def read_year(year: int) -> Tuple[List[BRGroupTeamResult], List[BRGame]]:
     return team_results, games
 
 
-if __name__ == "__main__":
-    for year in new_years:
-        try:
-            groups, games = read_year(year)
-            for g in groups:
-                assert isinstance(g, BRGroupTeamResult)
-            for g in games:
-                assert isinstance(g, BRGame)
-        except Exception as e:
-            print(f"error in {year}")
-            print(e)
+def load_new_br_results():
+    return {year: read_year(year) for year in new_years}

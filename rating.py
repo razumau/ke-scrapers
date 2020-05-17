@@ -59,7 +59,7 @@ def rename_csvs(ids: Iterable[int]):
 
 
 def read_csv(year: int) -> List[Dict]:
-    with open(f"{year}.csv", encoding='utf-8-sig') as csvfile:
+    with open(f"csv/{year}.csv", encoding='utf-8-sig') as csvfile:
         reader = csv.DictReader(csvfile, delimiter=",")
         return list(dict(row) for row in reader)
 
@@ -82,10 +82,10 @@ def process_csv(year: int) -> List[Player]:
 
 
 def read_rating_data() -> RatingData:
-    ids = tournament_ids.keys()
-    write_urls_to_file(ids, "urls.txt")
-    download_csvs("urls.txt")
-    rename_csvs(ids)
+    # ids = tournament_ids.keys()
+    # write_urls_to_file(ids, "urls.txt")
+    # download_csvs("urls.txt")
+    # rename_csvs(ids)
     players = flatten(process_csv(year) for year in tournament_ids.values())
     teams = set(player.team for player in players)
     results = get_results()
@@ -118,7 +118,9 @@ def fetch_results(tournament_id: int) -> List[TeamQuestions]:
 
 def get_results() -> List[TeamQuestions]:
     print("Getting results from rating.chgk.info")
-    results = (fetch_results(id_) for id_ in tournament_ids)
+    results = (fetch_results(id_)
+               for id_, year in tournament_ids.items()
+               if year >= 2015)
     return flatten(results)
 
 
