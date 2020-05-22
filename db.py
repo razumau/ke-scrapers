@@ -19,13 +19,14 @@ from models import (
     SIGame,
     SIGamePlayerResult,
     BRGame,
-    BRGroupTeamResult,
+    BRGroupTeamResult, EQGame, EQGameTeamResult,
 )
 from renames import rename_team
 from si import old_si_stages, new_si_stages
 from old_br import old_br_stages, br_stages_2005
 from new_br import new_br_stages
-from eq import old_eq_stages, new_eq_stages
+from old_eq import old_eq_stages
+from new_eq import eq_stages_2017, eq_stages
 
 
 def engine() -> Engine:
@@ -67,8 +68,10 @@ def create_stages():
     stages = [
         *generate_stages(old_range, old_si_stages, "СИ"),
         *generate_stages(new_range, new_si_stages, "СИ"),
+        *generate_stages([2005], ["Финал"], "ЭК"),
         *generate_stages(old_range, old_eq_stages, "ЭК"),
-        *generate_stages(new_range, new_eq_stages, "ЭК"),
+        *generate_stages([2017], eq_stages_2017, "ЭК"),
+        *generate_stages([2018, 2019], eq_stages, "ЭК"),
         *generate_stages([2005], br_stages_2005, "БР"),
         *generate_stages(old_range, old_br_stages, "БР"),
         *generate_stages(new_range, new_br_stages, "БР"),
@@ -242,6 +245,66 @@ def save_single_year_br_group_results(
             )
 
 
+def save_eq_results(
+    eq_results: Dict[int, List[utils.EQGame]]
+):
+    print("Saving EQ results")
+    year_map = fetch_tournament_year_map()
+    with session() as s:
+        s.execute("delete from eq_game")
+        s.execute("delete from eq_game_team_result")
+
+    for year, games in eq_results.items():
+        print(f"Saving EQ results for {year}")
+        t_id = year_map[year]
+        save_single_year_eq_games(t_id, games)
+        save_single_year_eq_results(t_id, games)
+
+
+def save_single_year_eq_games(t_id: int, games: List[utils.EQGame]):
+    print(f'creating games for {t_id}')
+
+    def create_eq_game(game: utils.SIGame):
+        with session() as s:
+            stage_id = (
+                s.query(Stage.id)
+                .filter_by(tournament_id=t_id, name=game.stage_name, game="ЭК")
+                .one()[0]
+            )
+        return EQGame(tournament_id=t_id, stage_id=stage_id, name=game.game_name)
+
+    save(EQGame, create_eq_game, games, truncate=False)
+    print(f'created games for {t_id}')
+
+
+def save_single_year_eq_results(t_id: int, games: List[utils.EQGame]):
+    with session() as s:
+        for game in games:
+            print(f"finding {game}")
+            saved_game = (
+                s.query(EQGame)
+                .join(Stage)
+                .filter(
+                    Stage.tournament_id == t_id,
+                    Stage.name == game.stage_name,
+                    Stage.game == "ЭК",
+                    EQGame.name == game.game_name,
+                )
+                .one()
+            )
+
+            for team in game.teams:
+                tt_id = find_team_tournament_id(s, t_id, team.team_name)
+                saved_game.team_results.append(
+                    EQGameTeamResult(
+                        team_tournament_id=tt_id,
+                        points=team.points,
+                        shootout=team.shootout,
+                        place=team.place,
+                    )
+                )
+
+
 def save_single_year_si_games(t_id: int, games: List[utils.SIGame]):
     def create_si_game(game: utils.SIGame):
         with session() as s:
@@ -360,6 +423,7 @@ def save_rating_chgk_results(results: Iterable[utils.TeamQuestions]):
                 .filter_by(rating_id=res.team_id, tournament_id=t_id)
                 .one()[0]
             )
+
             for q_number, q_result in enumerate(res.questions, 1):
                 s.add(
                     CHGKTeamDetails(
