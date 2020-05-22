@@ -2,8 +2,7 @@ from pprint import pprint
 from typing import Tuple, List
 from itertools import takewhile
 import re
-from utils import BRGame, BRGroupTeamResult, flatten
-
+from utils import BRGame, BRGroupTeamResult, flatten, is_junk_line
 
 br_stages_2005 = [
     "Предварительный этап",
@@ -22,6 +21,8 @@ old_br_stages = [
 
 old_years = list(range(2006, 2017))
 game_format = re.compile(r"[\d]+:[\d]+")
+
+YearResults = Tuple[List[BRGame], List[BRGroupTeamResult]]
 
 
 def process_games_row(row, team, all_games, stage):
@@ -80,7 +81,7 @@ def read_final(line) -> List[BRGame]:
     ]
 
 
-def read_group(lines: List, stage: str) -> Tuple[List[BRGame], List[BRGroupTeamResult]]:
+def read_group(lines: List, stage: str) -> YearResults:
     if not lines[0].startswith("Группа"):
         pprint(lines[0])
         raise ValueError
@@ -127,19 +128,7 @@ def read_group(lines: List, stage: str) -> Tuple[List[BRGame], List[BRGroupTeamR
     return parsed_games, team_results
 
 
-def is_junk_line(line: str):
-    if line.strip() == "":
-        return True
-    if line == "\n":
-        return True
-    if "Кубок Европы" in line:
-        return True
-    if line.startswith("На главную страницу"):
-        return True
-    return False
-
-
-def read_old_year(year: int) -> Tuple[List[BRGroupTeamResult], List[BRGame]]:
+def read_old_year(year: int) -> YearResults:
     with open(f"./txt/{year}/br.txt") as year_file:
         lines = [l for l in year_file.readlines() if not is_junk_line(l)]
 
@@ -184,7 +173,7 @@ def read_old_year(year: int) -> Tuple[List[BRGroupTeamResult], List[BRGame]]:
     return flatten(groups), games
 
 
-def read_2005() -> Tuple[List[BRGroupTeamResult], List[BRGame]]:
+def read_2005() -> YearResults:
     with open(f"./txt/2005/br.txt") as year_file:
         lines = [line for line in year_file.readlines() if not is_junk_line(line)]
 

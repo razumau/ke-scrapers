@@ -2,7 +2,21 @@ from dataclasses import dataclass
 from itertools import chain
 from typing import List, Optional, Iterable
 
-OLD_URL = "http://localhost:8000/ke"
+
+def is_junk_line(line: str):
+    if line.strip() == "":
+        return True
+    if line == "\n":
+        return True
+    if "Кубок Европы" in line:
+        return True
+    if line.startswith("На главную страницу"):
+        return True
+    return False
+
+
+def flatten(list_of_lists: Iterable) -> List:
+    return list(chain.from_iterable(list_of_lists))
 
 
 @dataclass(frozen=True)
@@ -38,18 +52,14 @@ class TeamNameQuestions:
     questions: List[int]
 
 
-def flatten(list_of_lists: Iterable) -> List:
-    return list(chain.from_iterable(list_of_lists))
-
-
 @dataclass(frozen=True)
 class SIPlayer:
     team: str
     city: str
     first_name: str
     last_name: str
-    points: int
-    shootout: int
+    points: int = None
+    shootout: int = None
 
 
 @dataclass(frozen=True)
@@ -82,3 +92,20 @@ class BRGroupTeamResult:
     minus: int = 0
     points: int = 0
     place: float = 0
+
+
+@dataclass(frozen=True)
+class EQGameTeamResult:
+    stage_name: str
+    game_name: str
+    team_name: str
+    place: float
+    points: int = None
+    shootout: int = None
+
+
+@dataclass(frozen=False)
+class EQGame:
+    stage_name: str
+    game_name: str
+    teams: List[EQGameTeamResult]
