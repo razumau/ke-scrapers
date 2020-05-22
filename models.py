@@ -106,9 +106,20 @@ class EQGameTeamResult(Base):
     game_id = Column(Integer, ForeignKey("eq_game.id"), index=True)
     points = Column(Integer)
     shootout = Column(Integer)
+    place = Column(Float)
 
     tournament = relationship("TeamTournament", backref="eq_game_team_results")
     game = relationship("EQGame", backref="team_results")
+
+
+class SIWritten(Base):
+    __tablename__ = "si_written"
+    tournament_id = Column(Integer, ForeignKey("tournament.id"), index=True)
+    player_id = Column(Integer, ForeignKey("player.id"), index=True)
+    points = Column(Integer)
+
+    tournament = relationship("Tournament", backref="si_written")
+    player = relationship("Player", backref="si_written")
 
 
 class SIGame(Base):
