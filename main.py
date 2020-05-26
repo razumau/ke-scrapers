@@ -18,7 +18,7 @@ from new_eq import load_new_eq_results
 from old_eq import load_old_eq_results
 from process import build_base_teams, unique_players
 from rating import read_rating_data
-from si import load_si_results
+from old_si import load_si_results
 from old_br import load_old_br_results
 from new_br import load_new_br_results
 

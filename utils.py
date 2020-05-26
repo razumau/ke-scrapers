@@ -52,7 +52,7 @@ class TeamNameQuestions:
     questions: List[int]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class SIPlayer:
     team: str
     city: str
@@ -60,6 +60,7 @@ class SIPlayer:
     last_name: str
     points: int = None
     shootout: int = None
+    place: float = None
 
 
 @dataclass(frozen=True)

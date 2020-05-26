@@ -22,7 +22,8 @@ from models import (
     BRGroupTeamResult, EQGame, EQGameTeamResult,
 )
 from renames import rename_team
-from si import old_si_stages, new_si_stages
+from old_si import old_si_stages
+from new_si import new_si_stages
 from old_br import old_br_stages, br_stages_2005
 from new_br import new_br_stages
 from old_eq import old_eq_stages
