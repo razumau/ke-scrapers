@@ -117,6 +117,7 @@ class SIWritten(Base):
     tournament_id = Column(Integer, ForeignKey("tournament.id"), index=True)
     player_id = Column(Integer, ForeignKey("player.id"), index=True)
     points = Column(Integer)
+    place = Column(Float)
 
     tournament = relationship("Tournament", backref="si_written")
     player = relationship("Player", backref="si_written")
@@ -139,6 +140,7 @@ class SIGamePlayerResult(Base):
     game_id = Column(Integer, ForeignKey("si_game.id"), index=True)
     points = Column(Integer)
     shootout = Column(Integer)
+    place = Column(Float)
 
     game = relationship("SIGame", backref="players")
     player = relationship("Player", backref="si_games")

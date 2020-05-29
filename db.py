@@ -19,7 +19,9 @@ from models import (
     SIGame,
     SIGamePlayerResult,
     BRGame,
-    BRGroupTeamResult, EQGame, EQGameTeamResult,
+    BRGroupTeamResult,
+    EQGame,
+    EQGameTeamResult,
 )
 from renames import rename_team
 from old_si import old_si_stages
@@ -67,6 +69,7 @@ def create_stages():
     new_range = list(range(2017, 2020))
 
     stages = [
+        *generate_stages([2005], old_si_stages, "СИ"),
         *generate_stages(old_range, old_si_stages, "СИ"),
         *generate_stages(new_range, new_si_stages, "СИ"),
         *generate_stages([2005], ["Финал"], "ЭК"),
@@ -127,8 +130,9 @@ def find_team_tournament_id(session, tournament_id: int, team_name: str) -> int:
 
 
 def find_player_id(
-    first_name: str, last_name: str, team_name: str = None, team_city: str = None
+    first_name: str, last_name: str, team_name: str = None, tournament_id: int = None
 ):
+    print(first_name, last_name, team_name)
     with session() as s:
         ids = (
             s.query(Player.id)
@@ -138,6 +142,23 @@ def find_player_id(
 
         if len(ids) == 1:
             return ids[0][0]
+
+        if len(ids) == 0:
+            print(f"Maybe there’s only one {first_name} in {team_name}?")
+            player_id = (
+                s.query(TeamTournamentPlayer.player_id)
+                .join(TeamTournament)
+                .join(Player)
+                .filter(
+                    TeamTournament.name == team_name,
+                    Player.first_name == first_name,
+                    TeamTournament.tournament_id == tournament_id,
+                )
+                .one()[0]
+            )
+
+            print(f"Only one {first_name} in {team_name}")
+            return player_id
 
         if team_name is None:
             raise ValueError(f"More than one player with name {first_name} {last_name}")
@@ -152,7 +173,7 @@ def find_player_id(
                     Player.first_name == first_name,
                     Player.last_name == last_name,
                 )
-                .one()
+                .one()[0]
             )
         except Exception:
             print(first_name, last_name, team_name)
@@ -164,12 +185,13 @@ def save_si_results(si_results: Dict[int, List[utils.SIGame]]):
     print("Saving SI results")
     year_map = fetch_tournament_year_map()
     with session() as s:
-        # s.execute("TRUNCATE si_game CASCADE")
-        s.execute("TRUNCATE si_game_player_result CASCADE")
+        s.execute("delete from si_game")
+        s.execute("delete from si_game_player_result")
 
     for year, games in si_results.items():
         print(f"Saving SI results for {year}")
         t_id = year_map[year]
+        save_single_year_si_games(t_id, games)
         save_single_year_si_results(t_id, games)
 
 
@@ -246,9 +268,7 @@ def save_single_year_br_group_results(
             )
 
 
-def save_eq_results(
-    eq_results: Dict[int, List[utils.EQGame]]
-):
+def save_eq_results(eq_results: Dict[int, List[utils.EQGame]]):
     print("Saving EQ results")
     year_map = fetch_tournament_year_map()
     with session() as s:
@@ -263,7 +283,7 @@ def save_eq_results(
 
 
 def save_single_year_eq_games(t_id: int, games: List[utils.EQGame]):
-    print(f'creating games for {t_id}')
+    print(f"creating games for {t_id}")
 
     def create_eq_game(game: utils.SIGame):
         with session() as s:
@@ -275,7 +295,7 @@ def save_single_year_eq_games(t_id: int, games: List[utils.EQGame]):
         return EQGame(tournament_id=t_id, stage_id=stage_id, name=game.game_name)
 
     save(EQGame, create_eq_game, games, truncate=False)
-    print(f'created games for {t_id}')
+    print(f"created games for {t_id}")
 
 
 def save_single_year_eq_results(t_id: int, games: List[utils.EQGame]):
@@ -336,13 +356,14 @@ def save_single_year_si_results(t_id: int, games: List[utils.SIGame]):
 
             for player in game.players:
                 player_id = find_player_id(
-                    player.first_name, player.last_name, player.team
+                    player.first_name, player.last_name, player.team, t_id
                 )
                 saved_game.players.append(
                     SIGamePlayerResult(
                         player_id=player_id,
                         points=player.points,
                         shootout=player.shootout,
+                        place=player.place,
                     )
                 )
 

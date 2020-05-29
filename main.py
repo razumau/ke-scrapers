@@ -18,7 +18,8 @@ from new_eq import load_new_eq_results
 from old_eq import load_old_eq_results
 from process import build_base_teams, unique_players
 from rating import read_rating_data
-from old_si import load_si_results
+from old_si import load_old_si_results
+from new_si import load_new_si_results
 from old_br import load_old_br_results
 from new_br import load_new_br_results
 
@@ -66,11 +67,18 @@ def save_eq():
     save_eq_results(all_eq)
 
 
+def save_si():
+    old_si = load_old_si_results()
+    new_si = load_new_si_results()
+    all_si = {**old_si, **new_si}
+    save_si_results(all_si)
+
+
 def main():
     # recreate_schema()
     # save_teams_and_tournaments()
 
-    save_eq()
+    save_si()
 
 
 if __name__ == "__main__":

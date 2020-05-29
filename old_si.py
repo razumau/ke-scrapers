@@ -19,7 +19,7 @@ def load_si_results(year: int):
     all_rows = lines[:-2]
     split = split_into_stages(all_rows)
     games = [split_into_games(stage.strip(), rows) for stage, rows in split.items()]
-    final = split_into_games("Финал", all_rows[-4:])
+    final = split_into_games("Финал", all_rows[-3:])
     return [*flatten(games), *final]
 
 
@@ -44,12 +44,14 @@ def split_into_games(stage_name: str, rows: List):
     stage_results = []
     name = rows[0]
     player_place = 0
+    starting_index = 1
     if not name or not name.startswith("Бой"):
         game_number = 1
+        starting_index = 0
         local_name = f"{stage_name} — бой {game_number}"
         name = None
 
-    for row in rows[1:]:
+    for row in rows[starting_index:]:
         if row.startswith("Бой "):
             name = row
             player_place = 0
@@ -98,7 +100,13 @@ def process_score_row(row_str) -> SIPlayer:
     )
 
 
+def load_old_si_results():
+    return {year: load_si_results(year) for year in range(2005, 2017)}
+
+
 if __name__ == "__main__":
-    for year in range(2005, 2016):
-        res = load_si_results(year)
-        pprint(res)
+    year = 2005
+    pprint(load_si_results(2005))
+    # for year in range(2005, 2016):
+    #     res = load_si_results(year)
+    #     pprint(res)
