@@ -1,6 +1,6 @@
 from pprint import pprint
 
-from chgk import load_year_results_html, load_chgk_results
+from chgk import load_chgk_results
 from db import (
     save_teams,
     engine,
@@ -11,7 +11,10 @@ from db import (
     save_rating_chgk_results,
     save_si_results,
     create_stages,
-    save_br_results, save_old_chgk_results, save_eq_results,
+    save_br_results,
+    save_old_chgk_results,
+    save_eq_results,
+    save_editors,
 )
 from models import Base
 from new_eq import load_new_eq_results
@@ -43,6 +46,7 @@ def save_teams_and_tournaments():
     save_players(unique_players(rating_data.players))
     save_team_tournaments(rating_data.teams)
     save_team_tournament_player(rating_data.players)
+    # save_editors()
 
 
 def save_chgk():
@@ -78,7 +82,7 @@ def main():
     # recreate_schema()
     # save_teams_and_tournaments()
 
-    save_si()
+    save_editors()
 
 
 if __name__ == "__main__":

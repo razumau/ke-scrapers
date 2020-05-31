@@ -21,7 +21,7 @@ from models import (
     BRGame,
     BRGroupTeamResult,
     EQGame,
-    EQGameTeamResult,
+    EQGameTeamResult, Editor,
 )
 from renames import rename_team
 from old_si import old_si_stages
@@ -30,6 +30,7 @@ from old_br import old_br_stages, br_stages_2005
 from new_br import new_br_stages
 from old_eq import old_eq_stages
 from new_eq import eq_stages_2017, eq_stages
+from editors import load_editors
 
 
 def engine() -> Engine:
@@ -84,6 +85,24 @@ def create_stages():
     save(Stage, create_stage, stages)
 
 
+def save_editors():
+    def create_si_game(editor: Dict):
+        t_id = fetch_tournament_year_map()[int(editor["year"])]
+        first_name, last_name = editor["name"].split(" ")
+        player_id = find_player_id(first_name, last_name, can_fail=True)
+        tour = int(editor["tour"]) if editor["tour"] else None
+        return Editor(tournament_id=t_id,
+                      name=editor["name"],
+                      game=editor["game"],
+                      stage=editor["stage"],
+                      tour=tour,
+                      player_id=player_id,
+                      )
+
+    editors = load_editors()
+    save(SIGame, create_si_game, editors, truncate=False)
+
+
 def save_teams(teams: List[Tuple]):
     def create_team(team: Tuple):
         return Team(
@@ -130,7 +149,8 @@ def find_team_tournament_id(session, tournament_id: int, team_name: str) -> int:
 
 
 def find_player_id(
-    first_name: str, last_name: str, team_name: str = None, tournament_id: int = None
+    first_name: str, last_name: str, team_name: str = None, tournament_id: int = None,
+        can_fail: bool = False
 ):
     print(first_name, last_name, team_name)
     with session() as s:
@@ -142,6 +162,9 @@ def find_player_id(
 
         if len(ids) == 1:
             return ids[0][0]
+
+        if len(ids) == 0 and can_fail:
+            return None
 
         if len(ids) == 0:
             print(f"Maybe there’s only one {first_name} in {team_name}?")
@@ -163,21 +186,17 @@ def find_player_id(
         if team_name is None:
             raise ValueError(f"More than one player with name {first_name} {last_name}")
 
-        try:
-            player_id = (
-                s.query(TeamTournamentPlayer.player_id)
-                .join(TeamTournament)
-                .join(Player)
-                .filter(
-                    TeamTournament.name == team_name,
-                    Player.first_name == first_name,
-                    Player.last_name == last_name,
-                )
-                .one()[0]
+        player_id = (
+            s.query(TeamTournamentPlayer.player_id)
+            .join(TeamTournament)
+            .join(Player)
+            .filter(
+                TeamTournament.name == team_name,
+                Player.first_name == first_name,
+                Player.last_name == last_name,
             )
-        except Exception:
-            print(first_name, last_name, team_name)
-            raise
+            .one()[0]
+        )
         return player_id
 
 

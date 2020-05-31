@@ -182,3 +182,16 @@ class BRGroupTeamResult(Base):
 
     tournament = relationship("TeamTournament", backref="br_group_team_results")
     stage = relationship("Stage", backref="br_group_team_results")
+
+
+class Editor(Base):
+    tournament_id = Column(Integer, ForeignKey("tournament.id"), index=True)
+    player_id = Column(Integer, ForeignKey("player.id"))
+    tour = Column(Integer)
+    name = Column(String)
+    game = Column(String)
+    stage = Column(String)
+
+    tournament = relationship("Tournament", backref="editors")
+    player = relationship("Player", backref="editors")
+
