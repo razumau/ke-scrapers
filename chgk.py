@@ -24,15 +24,21 @@ def rename(team: str, year: int) -> str:
 def load_year_results_html(year: int) -> List[TeamNameQuestions]:
     print(f"Loading results for {year}")
     session = HTMLSession()
-    r = session.get(f"http://windflower.spb.ru/ke/{year}/results/chgk.html")
-    r.html.encoding = r.encoding
+    url = f"http://windflower.spb.ru/ke/{year}/results/chgk.html" if year != 2011 else "http://localhost:8000/chgk_2011.html"
+    r = session.get(url)
+    if year != 2011:
+        r.html.encoding = r.encoding
     results_table = r.html.find("table")[2]
 
     all_rows = [row.text.split("\n") for row in results_table.find("tr")]
-    results_rows = [row[:-2] for row in all_rows if len(row) > 1 and row[-1] != "М"]
+    results_rows = [row[:-1] for row in all_rows if len(row) > 1 and row[-1] != "М"]
     teams_results = defaultdict(list)
     for res in results_rows:
-        teams_results[res[0]].extend(safe_int(r) for r in res[1:])
+        teams_results[res[0]].extend(safe_int(r) for r in res[1:-1])
+        tour_sum = sum(safe_int(r) for r in res[1:-1])
+        if tour_sum != safe_int(res[-1]):
+            print('mismatch')
+            print(res)
 
     teams_table = r.html.find("table")[0]
     teams = [row.text.split("\n")[:3] for row in teams_table.find("tr")[1:]]
@@ -54,4 +60,5 @@ def load_chgk_results():
 
 
 if __name__ == "__main__":
+    # pprint(load_year_results_html(2011))
     pprint(load_chgk_results())
