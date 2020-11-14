@@ -66,7 +66,6 @@ class CHGKTeamResults(Base):
     tour_3 = Column(Integer)
     tour_4 = Column(Integer)
     tour_5 = Column(Integer)
-    unofficial = Column(Boolean)
 
     tournament = relationship("TeamTournament", backref="chgk_results")
 
@@ -121,6 +120,17 @@ class SIWritten(Base):
 
     tournament = relationship("Tournament", backref="si_written")
     player = relationship("Player", backref="si_written")
+
+
+class SIWrittenDetails(Base):
+    __tablename__ = "si_written_details"
+    tournament_id = Column(Integer, ForeignKey("tournament.id"), index=True)
+    player_id = Column(Integer, ForeignKey("player.id"), index=True)
+    category = Column(Integer)
+    points = Column(Integer)
+
+    tournament = relationship("Tournament", backref="si_written_details")
+    player = relationship("Player", backref="si_written_details")
 
 
 class SIGame(Base):

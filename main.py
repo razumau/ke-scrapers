@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from chgk import load_chgk_results
 from db import (
     save_teams,
@@ -14,7 +12,7 @@ from db import (
     save_br_results,
     save_old_chgk_results,
     save_eq_results,
-    save_editors,
+    save_editors, save_written_si_results,
 )
 from models import Base
 from new_eq import load_new_eq_results
@@ -25,6 +23,7 @@ from old_si import load_old_si_results
 from new_si import load_new_si_results
 from old_br import load_old_br_results
 from new_br import load_new_br_results
+from si_written import read_written_si_results
 
 
 def recreate_schema():
@@ -46,7 +45,6 @@ def save_teams_and_tournaments():
     save_players(unique_players(rating_data.players))
     save_team_tournaments(rating_data.teams)
     save_team_tournament_player(rating_data.players)
-    # save_editors()
 
 
 def save_chgk():
@@ -78,11 +76,20 @@ def save_si():
     save_si_results(all_si)
 
 
-def main():
-    # recreate_schema()
-    # save_teams_and_tournaments()
+def save_written_si():
+    results = read_written_si_results()
+    save_written_si_results(results)
 
+
+def main():
+    recreate_schema()
+    save_teams_and_tournaments()
+    save_chgk()
+    save_si()
+    save_eq()
+    save_br()
     save_editors()
+    save_written_si()
 
 
 if __name__ == "__main__":

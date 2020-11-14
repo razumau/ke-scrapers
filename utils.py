@@ -110,3 +110,11 @@ class EQGame:
     stage_name: str
     game_name: str
     teams: List[EQGameTeamResult]
+
+
+@dataclass(frozen=False)
+class SIWrittenPlayer:
+    name: str
+    sum: int
+    place: float
+    points: List[int]

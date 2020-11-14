@@ -21,7 +21,10 @@ from models import (
     BRGame,
     BRGroupTeamResult,
     EQGame,
-    EQGameTeamResult, Editor,
+    EQGameTeamResult,
+    Editor,
+    SIWritten,
+    SIWrittenDetails,
 )
 from renames import rename_team
 from old_si import old_si_stages
@@ -86,21 +89,22 @@ def create_stages():
 
 
 def save_editors():
-    def create_si_game(editor: Dict):
+    def create_editor(editor: Dict):
         t_id = fetch_tournament_year_map()[int(editor["year"])]
         first_name, last_name = editor["name"].split(" ")
         player_id = find_player_id(first_name, last_name, can_fail=True)
         tour = int(editor["tour"]) if editor["tour"] else None
-        return Editor(tournament_id=t_id,
-                      name=editor["name"],
-                      game=editor["game"],
-                      stage=editor["stage"],
-                      tour=tour,
-                      player_id=player_id,
-                      )
+        return Editor(
+            tournament_id=t_id,
+            name=editor["name"],
+            game=editor["game"],
+            stage=editor["stage"],
+            tour=tour,
+            player_id=player_id,
+        )
 
     editors = load_editors()
-    save(SIGame, create_si_game, editors, truncate=False)
+    save(Editor, create_editor, editors, truncate=False)
 
 
 def save_teams(teams: List[Tuple]):
@@ -149,8 +153,11 @@ def find_team_tournament_id(session, tournament_id: int, team_name: str) -> int:
 
 
 def find_player_id(
-    first_name: str, last_name: str, team_name: str = None, tournament_id: int = None,
-        can_fail: bool = False
+    first_name: str,
+    last_name: str,
+    team_name: str = None,
+    tournament_id: int = None,
+    can_fail: bool = False,
 ):
     print(first_name, last_name, team_name)
     with session() as s:
@@ -221,12 +228,12 @@ def save_br_results(
     year_map = fetch_tournament_year_map()
     with session() as s:
         s.execute("delete from br_group_team_result")
-        # s.execute("delete from br_game")
+        s.execute("delete from br_game")
 
     for year, (group_results, games) in br_results.items():
         print(f"Saving BR results for {year}")
         t_id = year_map[year]
-        # save_single_year_br_games(t_id, games)
+        save_single_year_br_games(t_id, games)
         save_single_year_br_group_results(t_id, group_results)
 
 
@@ -290,9 +297,9 @@ def save_single_year_br_group_results(
 def save_eq_results(eq_results: Dict[int, List[utils.EQGame]]):
     print("Saving EQ results")
     year_map = fetch_tournament_year_map()
-    with session() as s:
-        s.execute("delete from eq_game")
-        s.execute("delete from eq_game_team_result")
+    # with session() as s:
+        # s.execute("delete from eq_game")
+        # s.execute("delete from eq_game_team_result")
 
     for year, games in eq_results.items():
         print(f"Saving EQ results for {year}")
@@ -387,6 +394,56 @@ def save_single_year_si_results(t_id: int, games: List[utils.SIGame]):
                 )
 
 
+def save_written_si_results(si_results: Dict[int, List[utils.SIWrittenPlayer]]):
+    print("Saving SI results")
+    year_map = fetch_tournament_year_map()
+    with session() as s:
+        s.execute("delete from si_written")
+        s.execute("delete from si_written_details")
+
+    for year, players in si_results.items():
+        print(f"Saving SI results for {year}")
+        t_id = year_map[year]
+        save_single_year_written_si(t_id, players)
+
+
+def save_single_year_written_si(
+    tournament_id: int, players: List[utils.SIWrittenPlayer]
+):
+    def create_written_si_player(player: utils.SIWrittenPlayer):
+        first_name, last_name = player.name.split(" ")
+        player_id = find_player_id(first_name, last_name, can_fail=False)
+        return SIWritten(
+            tournament_id=tournament_id,
+            player_id=player_id,
+            points=player.sum,
+            place=player.place,
+        )
+
+    def create_written_si_player_details(player_details: Tuple):
+        return SIWrittenDetails(
+            tournament_id=player_details[0],
+            player_id=player_details[1],
+            category=player_details[2],
+            points=player_details[3],
+        )
+
+    save(SIWritten, create_written_si_player, players, truncate=False)
+    print("saved SIWritten")
+
+    for player in players:
+        first_name, last_name = player.name.split(" ")
+        player_id = find_player_id(first_name, last_name, can_fail=False)
+        details = (
+            (tournament_id, player_id, category, points)
+            for category, points in enumerate(player.points, 1)
+        )
+
+        save(
+            SIWrittenDetails, create_written_si_player_details, details, truncate=False
+        )
+
+
 def save_team_tournaments(teams: Iterable[utils.Team]):
     tournament_year = fetch_tournament_year_map()
 
@@ -444,7 +501,6 @@ def save_old_chgk_results(results: Iterable[utils.TeamNameQuestions]):
                     tour_3=sum(res.questions[30:45]),
                     tour_4=sum(res.questions[45:60]),
                     tour_5=sum(res.questions[60:75]),
-                    unofficial=False,
                 )
             )
 
@@ -483,7 +539,6 @@ def save_rating_chgk_results(results: Iterable[utils.TeamQuestions]):
                     tour_3=sum(res.questions[30:45]),
                     tour_4=sum(res.questions[45:60]),
                     tour_5=sum(res.questions[60:75]),
-                    unofficial=False,
                 )
             )
 
