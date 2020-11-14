@@ -87,7 +87,8 @@ def read_rating_data() -> RatingData:
     # download_csvs("urls.txt")
     # rename_csvs(ids)
     players = flatten(process_csv(year) for year in tournament_ids.values())
-    teams = set(player.team for player in players)
+    teams = set(player.team for player in players
+                if player.team != "Подозрительные пассажиры")
     results = get_results()
     return RatingData(teams, players, results)
 
@@ -113,6 +114,7 @@ def fetch_results(tournament_id: int) -> List[TeamQuestions]:
             questions=process_team_result(team_result),
         )
         for team_result in res.json()
+        if team_result["idteam"] != "50186"
     ]
 
 
