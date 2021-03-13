@@ -195,7 +195,7 @@ class BRGroupTeamResult(Base):
 
 
 class Editor(Base):
-    __tablename__ = "editor_raw"
+    __tablename__ = "editor_details"
     tournament_id = Column(Integer, ForeignKey("tournament.id"), index=True)
     player_id = Column(Integer, ForeignKey("player.id"))
     tour = Column(Integer)
