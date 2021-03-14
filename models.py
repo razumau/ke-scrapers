@@ -195,7 +195,15 @@ class BRGroupTeamResult(Base):
 
 
 class Editor(Base):
+    name = Column(String)
+    player_id = Column(Integer, ForeignKey("player.id"))
+
+    player = relationship("Player", backref="editors")
+
+
+class EditorDetails(Base):
     __tablename__ = "editor_details"
+    editor_id = Column(Integer, ForeignKey("editor.id"), index=True)
     tournament_id = Column(Integer, ForeignKey("tournament.id"), index=True)
     player_id = Column(Integer, ForeignKey("player.id"))
     tour = Column(Integer)
@@ -204,5 +212,6 @@ class Editor(Base):
     stage = Column(String)
 
     tournament = relationship("Tournament", backref="editors")
-    player = relationship("Player", backref="editors")
+
+    editor = relationship("Editor", backref="editor_details")
 
