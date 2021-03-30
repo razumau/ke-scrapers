@@ -1,3 +1,5 @@
+drop table medals;
+
 create table medals
 (
 	id INT,
@@ -34,9 +36,9 @@ insert into medals
                (select count(*) from player_places pp2 where eq_place = 1 and pp.id = pp2.id)   as gold_eq,
                (select count(*) from player_places pp2 where eq_place = 2 and pp.id = pp2.id)   as silver_eq,
                (select count(*) from player_places pp2 where eq_place = 3 and pp.id = pp2.id)   as bronze_eq,
-               (select count(*) from player_places pp2 where br_place = 1 and pp.id = pp2.id)   as gold_br,
-               (select count(*) from player_places pp2 where br_place = 2 and pp.id = pp2.id)   as silver_br,
-               (select count(*) from player_places pp2 where br_place = 3 and pp.id = pp2.id)   as bronze_br,
+               (select count(*) from player_places pp2 where br_place = '1' and pp.id = pp2.id)   as gold_br,
+               (select count(*) from player_places pp2 where br_place = '2' and pp.id = pp2.id)   as silver_br,
+               (select count(*) from player_places pp2 where br_place = '3' and pp.id = pp2.id)   as bronze_br,
                (select count(*) from player_places pp2 where si_place = 1 and pp.id = pp2.id)   as gold_si,
                (select count(*) from player_places pp2 where si_place = 2 and pp.id = pp2.id)   as silver_si,
                (select count(*) from player_places pp2 where si_place = 3 and pp.id = pp2.id)   as bronze_si
